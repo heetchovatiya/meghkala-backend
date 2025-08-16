@@ -58,35 +58,21 @@
 //   "exclude": ["node_modules"]
 // }
 
-
 {
   "compilerOptions": {
     "target": "ES2020",
-    "lib": ["ES2020"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "noEmit": false,
-    "esModuleInterop": true,
     "module": "commonjs",
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "declaration": false,
+    "lib": ["ES2020", "dom"],
     "outDir": "./dist",
     "rootDir": "./src",
- "typeRoots": [
-      "./node_modules/@types",
-      "./src/types" // This line is crucial
-    ]  },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "**/*.test.ts",
-    "**/*.spec.ts"
-  ]
+    "strict": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true
+    // NO "types" or "typeRoots" arrays. Let TypeScript do its job.
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

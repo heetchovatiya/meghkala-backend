@@ -4,7 +4,7 @@
 // import Stripe from 'stripe';
 // import asyncHandler from 'express-async-handler';
 // import { protect } from '../middleware/auth.middleware';
-// import { AuthRequest } from '../middleware/auth.middleware'; // Import our custom type
+// import { Request } from '../middleware/auth.middleware'; // Import our custom type
 // import Order, { IOrder, OrderStatus } from '../models/order.model';
 
 // const router = Router();
@@ -17,17 +17,17 @@
 // /**
 //  * @route   POST /api/payments/create-intent
 //  */
-// // The key fix is using AuthRequest here in the asyncHandler
-// router.post('/create-intent', protect, asyncHandler(async (req: AuthRequest, res: Response) => {
+// // The key fix is using Request here in the asyncHandler
+// router.post('/create-intent', protect, asyncHandler(async (req: Request, res: Response) => {
 //   // The 'protect' middleware GUARANTEES that req.user exists.
-//   // There is no 'possibly undefined' error anymore because AuthRequest requires it.
-  
+//   // There is no 'possibly undefined' error anymore because Request requires it.
+
 //   const { orderId } = req.body;
 //   if (!orderId) { res.status(400); throw new Error('Order ID is required.'); }
 
 //   // FIX: Type the result of findById to solve the 'order.user is unknown' error
 //   const order = await Order.findById<IOrder>(orderId);
-  
+
 //   if (!order) {
 //     res.status(404);
 //     throw new Error('Order not found.');
