@@ -17,7 +17,9 @@ const app: Application = express();
 // app.use(cors()); // Enable Cross-Origin Resource Sharing
 const allowedOrigins = [
   'http://localhost:3000', // For local development
-  'https://testing.meghkala.in' // Your new testing domain
+  'https://testing.meghkala.in' ,// Your new testing domain
+  'meghkala-frontend.vercel.app'
+
 ];
 
 app.use(cors({
