@@ -71,7 +71,6 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
-    // No "types" or "typeRoots" needed. They cause more problems than they solve.
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
