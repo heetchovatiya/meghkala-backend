@@ -18,7 +18,7 @@ const app: Application = express();
 const allowedOrigins = [
   'http://localhost:3000', // For local development
   'https://testing.meghkala.in' ,// Your new testing domain
-  'meghkala-frontend.vercel.app'
+  'https://meghkala-frontend.vercel.app/'
 
 ];
 
