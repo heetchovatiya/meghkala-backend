@@ -61,29 +61,19 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "lib": ["ES2020"],
+    // ✅ FIX: Include 'dom' for console and other browser-like APIs used by Node
+    "lib": ["ES2020", "dom"],
     "module": "commonjs",
     "moduleResolution": "node",
-    
-    // --- Output Configuration ---
     "outDir": "./dist",
     "rootDir": "./src",
-    
-    // --- Best Practices & Interoperability ---
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    
-    // --- These are not typically needed for a backend project ---
-    // "allowJs": true, // Only if you mix JS and TS files
-    // "isolatedModules": true, // More for bundlers like Babel/Vite
-    "noEmit": false, // `false` is correct, we want to emit JS files
-    "declaration": false // `false` is correct unless you're building a library
-
-    // ✅ --- THE FIX --- ✅
-    // The "types" and "typeRoots" arrays have been completely REMOVED.
+    "resolveJsonModule": true
+    // ✅ FIX: The "types" and "typeRoots" arrays have been removed
+    // to allow automatic discovery of all @types packages.
   },
   "include": [
     "src/**/*"
