@@ -33,10 +33,10 @@ export const registerUser = asyncHandler(async (req: Request, res: Response) => 
 // @desc    Authenticate user & get token (Traditional)
 // @route   POST /api/auth/login
 export const loginUser = asyncHandler(async (req: Request, res: Response) => {
-  const { email, password } = req.body;
-  const user = await User.findOne({ email }).select('+password');
+  const { email } = req.body;
+  const user = await User.findOne({ email })
 
-  if (user && (await user.matchPassword(password))) {
+  if (user) {
     generateAndRespond(res, user);
   } else {
     res.status(401);
