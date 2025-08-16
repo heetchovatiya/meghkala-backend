@@ -14,6 +14,7 @@ export interface IAddress extends Document {
     city: string;
     postalCode: string;
     country: string;
+    contactNumber: string;
 }
 
 // Interface for the main User document (without GoogleId)
@@ -32,6 +33,8 @@ const addressSchema: Schema<IAddress> = new Schema({
     city: { type: String, required: true },
     postalCode: { type: String, required: true },
     country: { type: String, required: true },
+      contactNumber: { type: String, required: true }, // ✅ NEW FIELD
+
 });
 
 const userSchema: Schema<IUser> = new Schema({

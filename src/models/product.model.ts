@@ -14,6 +14,9 @@ export interface IProduct extends Document {
   category: ICategory['_id'];
   availability: Availability;
   quantity: number;
+  reserved: number;
+    availableQuantity: number; // A virtual property, not stored in DB
+
 }
 
 const productSchema: Schema<IProduct> = new Schema({
@@ -24,7 +27,20 @@ const productSchema: Schema<IProduct> = new Schema({
   category: { type: Schema.Types.ObjectId, required: true, ref: 'Category' },
   availability: { type: String, enum: Object.values(Availability), required: true },
   quantity: { type: Number, required: true, min: 0, default: 0 },
-}, { timestamps: true });
+    reserved: { type: Number, default: 0, min: 0 }, // ✅ ADD THIS FIELD
+
+}, {
+  timestamps: true,
+  toJSON: { virtuals: true }, // Important: ensures virtuals are included in JSON responses
+  toObject: { virtuals: true },
+});
+
+
+// Create the virtual property to calculate available stock on the fly
+productSchema.virtual('availableQuantity').get(function(this: IProduct) {
+  return this.quantity - this.reserved;
+});
+
 
 const Product: Model<IProduct> = mongoose.model<IProduct>('Product', productSchema);
 export default Product;

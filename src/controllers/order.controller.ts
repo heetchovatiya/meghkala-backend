@@ -5,116 +5,107 @@ import Product, { Availability } from "../models/product.model";
 import { IUser } from "../models/user.model"; // Import the user interface
 import { v2 as cloudinary } from "cloudinary"; // Import cloudinary
 import Coupon from "../models/coupon.model"; // ✅ Import the Coupon model
-
+import mongoose from "mongoose";
 import { sendEmail } from "../utils/sendEmail"; // Assuming you have a utility function to send emails
 
+
 export const createOrder = asyncHandler(async (req: Request, res: Response) => {
-  // 1. Destructure orderItems and the new optional couponCode from the body
-  const { orderItems, couponCode } = req.body;
+ 
+  const { orderItems, couponCode, shippingAddress } = req.body;
 
   if (!orderItems || orderItems.length === 0) {
+    console.error("Validation Error: No order items provided.");
     res.status(400);
     throw new Error("No order items provided");
   }
-  // --- NEW: Immediately Deduct Inventory ---
-  const productUpdatePromises = [];
-  let subtotal = 0;
-  const productsForOrder = [];
 
-  for (const item of orderItems) {
-    const product = await Product.findById(item.productId);
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-    if (!product) {
-      res.status(404);
-      throw new Error(`Product not found: ${item.productId}`);
+  try {
+    const productReservationPromises = [];
+    let subtotal = 0;
+    const productsForOrder = [];
+
+    // --- SINGLE, CORRECT LOOP TO PROCESS ORDER ITEMS ---
+    for (const [index, item] of orderItems.entries()) {
+      const product = await Product.findById(item.productId).session(session);
+
+      if (!product) {
+        throw new Error(`Product not found with ID: ${item.productId}`);
+      }
+      
+      if (product.availableQuantity < item.quantity) {
+        throw new Error(`Not enough stock for ${product.title}. Only ${product.availableQuantity} available.`);
+      }
+
+      if (product.availability === 'IN_STOCK') {
+        product.reserved += item.quantity;
+        productReservationPromises.push(product.save({ session }));
+      }
+
+      const itemTotal = product.price * item.quantity;
+      subtotal += itemTotal;
+
+      productsForOrder.push({
+        product: product._id,
+        title: product.title,
+        image: product.images[0],
+        quantity: item.quantity,
+        priceAtPurchase: product.price,
+      });
     }
-    if (product.quantity < item.quantity) {
-      res.status(400);
-      throw new Error(
-        `Not enough stock for ${product.title}. Only ${product.quantity} left.`
-      );
+
+
+    // --- COUPON VALIDATION LOGIC ---
+    let finalAmount = subtotal;
+    let discountAmount = 0;
+    let appliedCoupon = null;
+
+    if (couponCode) {
+      const coupon = await Coupon.findOne({ code: couponCode.toUpperCase() }).session(session);
+      if (!coupon) { throw new Error("Coupon not found or is invalid."); }
+      if (coupon.expiryDate < new Date()) { throw new Error("This coupon has expired."); }
+      
+      if (coupon.discountType === "Fixed") { discountAmount = coupon.value; }
+      else if (coupon.discountType === "Percentage") { discountAmount = (subtotal * coupon.value) / 100; }
+      
+      finalAmount = Math.max(0, subtotal - discountAmount);
+      appliedCoupon = coupon._id;
+    } else {
+      console.log("No coupon code provided.");
     }
+    
+    // --- ORDER CREATION ---
+    const orderData = {
+      user: req.user?._id,
+      products: productsForOrder,
+      shippingAddress: shippingAddress,
+      subtotal: subtotal,
+      discountAmount: discountAmount,
+      finalAmount: finalAmount,
+      coupon: appliedCoupon,
+      status: "Awaiting Manual Payment",
+    };
 
-    // 2. Decrement the quantity
-    product.quantity -= item.quantity;
-    productUpdatePromises.push(product.save()); // Add the save promise to an array
+    const [createdOrder] = await Order.create([orderData], { session });
+    
+    await Promise.all(productReservationPromises);
+    
+    await session.commitTransaction();
+    
+    res.status(201).json(createdOrder);
 
-    // Prepare data for the order document
-    subtotal += product.price * item.quantity;
-    productsForOrder.push({
-      product: product._id,
-      name: product.title, // Using 'name' for consistency with frontend
-      image: product.images[0],
-      quantity: item.quantity,
-      priceAtPurchase: product.price,
-    });
+  } catch (error) {
+    console.error("\n--- ERROR OCCURRED: Aborting transaction ---");
+    await session.abortTransaction();
+    console.error("Transaction aborted.");
+    throw error; // Pass the error to the global error handler
+  } finally {
+    session.endSession();
+    console.log("Database session ended.");
+    console.log("--- CREATE ORDER REQUEST FINISHED ---");
   }
-
-  for (const item of orderItems) {
-    const product = await Product.findById(item.productId);
-    if (!product) {
-      res.status(404);
-      throw new Error(`Product not found: ${item.productId}`);
-    }
-    subtotal += product.price * item.quantity;
-    productsForOrder.push({
-      product: product._id,
-      name: product.title,
-      image: product.images[0],
-      quantity: item.quantity,
-      priceAtPurchase: product.price,
-    });
-  }
-
-  // 3. ✅ --- NEW COUPON LOGIC --- ✅
-  let finalAmount = subtotal;
-  let discountAmount = 0;
-  let appliedCoupon = null;
-
-  if (couponCode) {
-    const coupon = await Coupon.findOne({ code: couponCode.toUpperCase() });
-
-    // Validate the found coupon
-    if (!coupon) {
-      res.status(404);
-      throw new Error("Coupon not found or is invalid.");
-    }
-    if (coupon.expiryDate < new Date()) {
-      res.status(400);
-      throw new Error("This coupon has expired.");
-    }
-
-    // Calculate discount
-    if (coupon.discountType === "Fixed") {
-      discountAmount = coupon.value;
-    } else if (coupon.discountType === "Percentage") {
-      discountAmount = (subtotal * coupon.value) / 100;
-    }
-
-    // Apply discount, ensuring the total doesn't go below zero
-    finalAmount = Math.max(0, subtotal - discountAmount);
-    appliedCoupon = coupon._id; // Store a reference to the coupon used
-  }
-  // ✅ --- END COUPON LOGIC --- ✅
-
-  // 4. Create the new order with the calculated final amount
-  const order = new Order({
-    user: req.user?._id,
-    products: productsForOrder,
-    subtotal: subtotal,
-    discountAmount: discountAmount,
-    finalAmount: finalAmount,
-    coupon: appliedCoupon, // Optional: save the coupon ID to the order
-    status: "Awaiting Manual Payment", // The initial status
-  });
-
-  const createdOrder = await order.save();
-  // ✅ IMPORTANT: Only after the order is successfully created,
-  // execute all the saved product update promises.
-  await Promise.all(productUpdatePromises);
-
-  // 5. Respond with the created order
-  res.status(201).json(createdOrder);
 });
 
 export const getMyOrders = asyncHandler(async (req: Request, res: Response) => {
