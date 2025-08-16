@@ -58,28 +58,35 @@
 //   "exclude": ["node_modules"]
 // }
 
+
 {
   "compilerOptions": {
     "target": "ES2020",
-    // ✅ FIX: Include 'dom' for console and other browser-like APIs used by Node
-    "lib": ["ES2020", "dom"],
+    "lib": ["ES2020"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": false,
+    "esModuleInterop": true,
     "module": "commonjs",
     "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "declaration": false,
     "outDir": "./dist",
     "rootDir": "./src",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
-    // ✅ FIX: The "types" and "typeRoots" arrays have been removed
-    // to allow automatic discovery of all @types packages.
-  },
+ "typeRoots": [
+      "./node_modules/@types",
+      "./src/types" // This line is crucial
+    ]  },
   "include": [
     "src/**/*"
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts"
   ]
 }
