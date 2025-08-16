@@ -6,7 +6,6 @@ import { IUser } from "../models/user.model"; // Import the user interface
 import { v2 as cloudinary } from "cloudinary"; // Import cloudinary
 import Coupon from "../models/coupon.model"; // ✅ Import the Coupon model
 
-import { Request } from "../middleware/auth.middleware";
 import { sendEmail } from "../utils/sendEmail"; // Assuming you have a utility function to send emails
 
 export const createOrder = asyncHandler(async (req: Request, res: Response) => {

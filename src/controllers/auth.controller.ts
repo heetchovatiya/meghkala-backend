@@ -3,7 +3,6 @@ import asyncHandler from "express-async-handler";
 import User from "../models/user.model";
 import generateToken from "../utils/generateToken";
 import { sendEmail } from "../utils/sendEmail";
-import { Request } from "../middleware/auth.middleware";
 
 // Reusable function to format response and send token
 const generateAndRespond = (res: Response, user: any) => {

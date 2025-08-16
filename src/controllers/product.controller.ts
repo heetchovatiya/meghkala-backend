@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import Product from "../models/product.model";
 import Category from "../models/category.model";
-import { Request } from "../middleware/auth.middleware";
 import mongoose from "mongoose";
 
 // --- CATEGORY CONTROLLERS ---

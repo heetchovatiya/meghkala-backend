@@ -1,7 +1,6 @@
 import { Response } from "express";
 import asyncHandler from "express-async-handler";
 import Coupon from "../models/coupon.model";
-import { Request } from "../middleware/auth.middleware";
 
 export const createCoupon = asyncHandler(
   async (req: Request, res: Response) => {

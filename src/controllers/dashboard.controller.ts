@@ -4,7 +4,6 @@ import Order, { OrderStatus } from "../models/order.model";
 import User from "../models/user.model";
 import Product from "../models/product.model";
 import Notification from "../models/notification.model";
-import { Request } from "../middleware/auth.middleware";
 
 // @desc    Get key statistics for the admin dashboard
 // @route   GET /api/dashboard/stats

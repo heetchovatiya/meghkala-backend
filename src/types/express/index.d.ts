@@ -1,12 +1,14 @@
 // src/types/express/index.d.ts
 import { IUser } from '../../models/user.model';
-import 'multer'; // Ensures Multer's File type is available
+import 'multer';
 
 declare global {
   namespace Express {
     export interface Request {
       user?: IUser;
-      file?: Multer.File;
+      // The 'file' property from multer is automatically added by @types/multer
+      // but we can leave it here for explicit clarity if needed.
+      // file?: Multer.File;
     }
   }
 }
