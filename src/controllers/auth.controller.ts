@@ -19,14 +19,14 @@ const generateAndRespond = (res: Response, user: any) => {
 // @desc    Register a new user (Traditional)
 // @route   POST /api/auth/register
 export const registerUser = asyncHandler(async (req: Request, res: Response) => {
-  const { name, email, password } = req.body;
+  const { name, email } = req.body;
   const userExists = await User.findOne({ email });
 
   if (userExists) {
     res.status(400);
     throw new Error('User with this email already exists.');
   }
-  const user = await User.create({ name, email, password });
+  const user = await User.create({ name, email });
   generateAndRespond(res, user);
 });
 
