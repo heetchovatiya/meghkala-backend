@@ -7,7 +7,7 @@
     "start": "node dist/server.js",
     "dev": "nodemon src/server.ts",
     "build": "npm run clean && tsc",
-    "clean": "rm -rf dist"
+    "clean": "rimraf dist"
   },
   "keywords": [],
   "author": "",
@@ -35,7 +35,7 @@
     "@types/multer": "^1.4.7",
     "@types/node": "^20.5.0",
     "@types/nodemailer": "^6.4.9",
-    "rimraf": "^5.0.1",
+    "rimraf": "^5.0.10",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.1.6"
   }

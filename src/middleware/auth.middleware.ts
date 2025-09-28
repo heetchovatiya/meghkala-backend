@@ -3,6 +3,15 @@ import jwt from "jsonwebtoken";
 import asyncHandler from "express-async-handler";
 import User, { IUser } from "../models/user.model";
 
+// Extend Express Request interface
+declare global {
+  namespace Express {
+    interface Request {
+      user?: IUser;
+    }
+  }
+}
+
 /**
  * FINAL, CORRECTED Request Interface.
  * The 'user' property is now OPTIONAL, to match Express's Request type before authentication.

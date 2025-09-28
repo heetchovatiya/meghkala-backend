@@ -1,9 +1,12 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI as string);
+    const mongoUri =
+      process.env.MONGO_URI || "mongodb://localhost:27017/meghkala";
+    const conn = await mongoose.connect(mongoUri);
     console.log(`MongoDB Connected: ${conn.connection.host}`);
+    return conn;
   } catch (error: any) {
     console.error(`Error: ${error.message}`);
     process.exit(1);

@@ -1,9 +1,9 @@
-import express, { Application, Request, Response } from 'express';
-import dotenv from 'dotenv';
-import cors from 'cors';
-import connectDB from './config/db';
-import apiRoutes from './routes';
-import { notFound, errorHandler } from './middleware/error.middleware';
+import express, { Application, Request, Response } from "express";
+import dotenv from "dotenv";
+import cors from "cors";
+import connectDB from "./config/db";
+import apiRoutes from "./routes";
+import { notFound, errorHandler } from "./middleware/error.middleware";
 
 // Load environment variables
 dotenv.config();
@@ -33,14 +33,32 @@ app.use(cors()); // Enable Cross-Origin Resource Sharing
 //     return callback(null, true);
 //   }
 // }));
-app.use(express.json()); // To parse JSON bodies
 
-// API Routes
-app.get('/', (req: Request, res: Response) => {
-  res.send('API is running...');
+// API Routes (before body parsing to handle uploads properly)
+app.get("/", (req: Request, res: Response) => {
+  res.send("API is running...");
 });
 
-app.use('/api', apiRoutes);
+// Handle upload routes first (before JSON parsing)
+app.use("/api/upload", require("./routes/upload.routes").default);
+
+// Body parsing middleware with proper content-type handling
+app.use(
+  express.json({
+    limit: "50mb",
+    type: "application/json", // Only parse JSON content-type
+  })
+);
+app.use(
+  express.urlencoded({
+    limit: "50mb",
+    extended: true,
+    type: "application/x-www-form-urlencoded", // Only parse form data
+  })
+);
+
+// Other API Routes (after body parsing)
+app.use("/api", apiRoutes);
 
 // Error Handling Middleware
 app.use(notFound);
@@ -48,4 +66,6 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5001;
 
-app.listen(PORT, () => console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`));
+app.listen(PORT, () =>
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`)
+);
