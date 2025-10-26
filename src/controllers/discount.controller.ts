@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import Discount from "../models/discount.model";
+import { DiscountService } from "../services/discount.service";
 import Product from "../models/product.model";
 
 // @desc    Create a new discount
@@ -8,7 +9,7 @@ import Product from "../models/product.model";
 // @access  Private/Admin
 export const createDiscount = asyncHandler(
   async (req: Request, res: Response) => {
-    const discount = await Discount.create(req.body);
+    const discount = await DiscountService.createDiscount(req.body);
     res.status(201).json(discount);
   }
 );
@@ -28,13 +29,7 @@ export const getAllDiscounts = asyncHandler(
 // @access  Public
 export const getActiveDiscounts = asyncHandler(
   async (req: Request, res: Response) => {
-    const now = new Date();
-    const discounts = await Discount.find({
-      isActive: true,
-      status: "Active",
-      startDate: { $lte: now },
-      endDate: { $gte: now },
-    }).sort({ createdAt: -1 });
+    const discounts = await DiscountService.getActiveDiscounts();
     res.json(discounts);
   }
 );
@@ -130,6 +125,17 @@ export const calculateDiscounts = asyncHandler(
         isApplicable = productIds.some((id: string) =>
           discount.applicableProducts!.includes(id as any)
         );
+      } else if (
+        discount.applicableBrands &&
+        discount.applicableBrands.length > 0
+      ) {
+        // Check if any cart item belongs to applicable brands
+        const productIds = items.map((item: any) => item.productId);
+        const products = await Product.find({
+          _id: { $in: productIds },
+          brand: { $in: discount.applicableBrands },
+        });
+        isApplicable = products.length > 0;
       } else {
         // General discount applicable to all products
         isApplicable = true;
@@ -235,6 +241,9 @@ export const applyDiscount = asyncHandler(
     }
 
     const finalAmount = Math.max(0, orderTotal - discountAmount);
+
+    // Increment usage count
+    await DiscountService.incrementDiscountUsage(discount._id.toString());
 
     res.json({
       discount: {

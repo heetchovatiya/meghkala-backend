@@ -4,6 +4,7 @@ import Product from "../models/product.model";
 import Category from "../models/category.model";
 import Review from "../models/review.model";
 import mongoose from "mongoose";
+import { DiscountService } from "../services/discount.service";
 
 // --- CATEGORY CONTROLLERS ---
 
@@ -68,8 +69,20 @@ export const deleteCategory = asyncHandler(
 
 export const createProduct = asyncHandler(
   async (req: Request, res: Response) => {
-    const product = await Product.create(req.body);
-    res.status(201).json(product);
+    // Ensure price is stored correctly (fix the -100 issue)
+    const productData = {
+      ...req.body,
+      price: Number(req.body.price), // Ensure price is properly converted to number
+    };
+
+    const product = await Product.create(productData);
+
+    // Calculate discounts for the new product
+    const discountedProduct = await DiscountService.calculateProductDiscount(
+      product
+    );
+
+    res.status(201).json(discountedProduct);
   }
 );
 
@@ -78,7 +91,9 @@ export const getAllProducts = asyncHandler(
     const {
       keyword,
       category,
+      categories,
       subcategory,
+      subcategories,
       availability,
       featured,
       minPrice,
@@ -99,12 +114,32 @@ export const getAllProducts = asyncHandler(
       ];
     }
 
+    // Handle single category (backward compatibility)
     if (category) {
       filter.category = category as string;
     }
 
+    // Handle multiple categories
+    if (categories) {
+      const categoryIds = (categories as string).split(",").filter(Boolean);
+      if (categoryIds.length > 0) {
+        filter.category = { $in: categoryIds };
+      }
+    }
+
+    // Handle single subcategory (backward compatibility)
     if (subcategory) {
       filter.subcategory = subcategory as string;
+    }
+
+    // Handle multiple subcategories
+    if (subcategories) {
+      const subcategoryIds = (subcategories as string)
+        .split(",")
+        .filter(Boolean);
+      if (subcategoryIds.length > 0) {
+        filter.subcategory = { $in: subcategoryIds };
+      }
     }
 
     if (availability) {
@@ -157,11 +192,16 @@ export const getAllProducts = asyncHandler(
       .skip(skip)
       .limit(Number(limit));
 
+    // Calculate discounts for all products
+    const discountedProducts = await DiscountService.calculateProductsDiscounts(
+      products
+    );
+
     // Get total count for pagination
     const total = await Product.countDocuments(filter);
 
     res.json({
-      products,
+      products: discountedProducts,
       pagination: {
         currentPage: Number(page),
         totalPages: Math.ceil(total / Number(limit)),
@@ -186,13 +226,27 @@ export const getFeaturedProducts = asyncHandler(
       .sort({ createdAt: -1 })
       .limit(Number(limit));
 
-    res.json(products);
+    // Calculate discounts for featured products
+    const discountedProducts = await DiscountService.calculateProductsDiscounts(
+      products
+    );
+
+    res.json(discountedProducts);
   }
 );
 
 export const searchProducts = asyncHandler(
   async (req: Request, res: Response) => {
-    const { q, category, subcategory, sort, page = 1, limit = 12 } = req.query;
+    const {
+      q,
+      category,
+      categories,
+      subcategory,
+      subcategories,
+      sort,
+      page = 1,
+      limit = 12,
+    } = req.query;
 
     if (!q) {
       res.status(400);
@@ -207,8 +261,33 @@ export const searchProducts = asyncHandler(
       ],
     };
 
-    if (category) filter.category = category;
-    if (subcategory) filter.subcategory = subcategory;
+    // Handle single category (backward compatibility)
+    if (category) {
+      filter.category = category as string;
+    }
+
+    // Handle multiple categories
+    if (categories) {
+      const categoryIds = (categories as string).split(",").filter(Boolean);
+      if (categoryIds.length > 0) {
+        filter.category = { $in: categoryIds };
+      }
+    }
+
+    // Handle single subcategory (backward compatibility)
+    if (subcategory) {
+      filter.subcategory = subcategory as string;
+    }
+
+    // Handle multiple subcategories
+    if (subcategories) {
+      const subcategoryIds = (subcategories as string)
+        .split(",")
+        .filter(Boolean);
+      if (subcategoryIds.length > 0) {
+        filter.subcategory = { $in: subcategoryIds };
+      }
+    }
 
     const skip = (Number(page) - 1) * Number(limit);
     let sortOptions: any = { createdAt: -1 };
@@ -225,10 +304,15 @@ export const searchProducts = asyncHandler(
       .skip(skip)
       .limit(Number(limit));
 
+    // Calculate discounts for search results
+    const discountedProducts = await DiscountService.calculateProductsDiscounts(
+      products
+    );
+
     const total = await Product.countDocuments(filter);
 
     res.json({
-      products,
+      products: discountedProducts,
       query: q,
       pagination: {
         currentPage: Number(page),
@@ -260,6 +344,11 @@ export const getProductById = asyncHandler(
       throw new Error("Product not found");
     }
 
+    // Calculate discounts for the product
+    const discountedProduct = await DiscountService.calculateProductDiscount(
+      product
+    );
+
     // Get reviews for this product
     const reviews = await Review.find({ product: id })
       .populate("user", "name")
@@ -273,7 +362,7 @@ export const getProductById = asyncHandler(
         : 0;
 
     res.json({
-      ...product.toObject(),
+      ...discountedProduct,
       reviews,
       averageRating: Math.round(avgRating * 10) / 10,
       totalReviews: reviews.length,
@@ -283,7 +372,13 @@ export const getProductById = asyncHandler(
 
 export const updateProduct = asyncHandler(
   async (req: Request, res: Response) => {
-    const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
+    // Ensure price is stored correctly (fix the -100 issue)
+    const updateData = {
+      ...req.body,
+      ...(req.body.price && { price: Number(req.body.price) }), // Ensure price is properly converted to number
+    };
+
+    const product = await Product.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true,
     });
@@ -291,7 +386,13 @@ export const updateProduct = asyncHandler(
       res.status(404);
       throw new Error("Product not found");
     }
-    res.json(product);
+
+    // Calculate discounts for the updated product
+    const discountedProduct = await DiscountService.calculateProductDiscount(
+      product
+    );
+
+    res.json(discountedProduct);
   }
 );
 

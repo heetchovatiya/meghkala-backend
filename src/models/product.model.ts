@@ -13,6 +13,7 @@ export interface IProduct extends Document {
   images: string[];
   category: ICategory["_id"];
   subcategory?: ICategory["_id"];
+  brand?: string; // Added brand field for brand-wise discounts
   availability: Availability;
   quantity: number;
   reserved: number;
@@ -26,6 +27,11 @@ export interface IProduct extends Document {
     height: number;
   };
   tags: string[];
+  // Virtual properties for discount calculation
+  finalPrice: number;
+  discountAmount: number;
+  discountPercentage: number;
+  hasDiscount: boolean;
 }
 
 const productSchema: Schema<IProduct> = new Schema(
@@ -36,6 +42,7 @@ const productSchema: Schema<IProduct> = new Schema(
     images: [{ type: String, required: true }],
     category: { type: Schema.Types.ObjectId, required: true, ref: "Category" },
     subcategory: { type: Schema.Types.ObjectId, ref: "Category" },
+    brand: { type: String, trim: true }, // Added brand field
     availability: {
       type: String,
       enum: Object.values(Availability),
@@ -65,9 +72,21 @@ productSchema.virtual("availableQuantity").get(function (this: IProduct) {
   return this.quantity - this.reserved;
 });
 
-// Virtual property to get the final price
+// Virtual properties for discount calculation (will be calculated in service)
 productSchema.virtual("finalPrice").get(function (this: IProduct) {
-  return this.price;
+  return this.price; // Will be overridden by discount service
+});
+
+productSchema.virtual("discountAmount").get(function (this: IProduct) {
+  return 0; // Will be calculated by discount service
+});
+
+productSchema.virtual("discountPercentage").get(function (this: IProduct) {
+  return 0; // Will be calculated by discount service
+});
+
+productSchema.virtual("hasDiscount").get(function (this: IProduct) {
+  return false; // Will be calculated by discount service
 });
 
 // Add indexes for better performance
@@ -76,6 +95,7 @@ productSchema.index({ title: "text", description: "text", tags: "text" });
 productSchema.index({ sku: 1 });
 productSchema.index({ price: 1 });
 productSchema.index({ isFeatured: 1, availability: 1 });
+productSchema.index({ brand: 1 }); // Added brand index for brand-wise discounts
 
 const Product: Model<IProduct> = mongoose.model<IProduct>(
   "Product",

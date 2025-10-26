@@ -23,6 +23,7 @@ export interface IDiscount extends Document {
   status: DiscountStatus;
   applicableCategories?: mongoose.Schema.Types.ObjectId[];
   applicableProducts?: mongoose.Schema.Types.ObjectId[];
+  applicableBrands?: string[]; // Added brand support
   usageLimit?: number;
   usedCount: number;
   isActive: boolean;
@@ -49,6 +50,7 @@ const discountSchema: Schema<IDiscount> = new Schema(
     },
     applicableCategories: [{ type: Schema.Types.ObjectId, ref: "Category" }],
     applicableProducts: [{ type: Schema.Types.ObjectId, ref: "Product" }],
+    applicableBrands: [{ type: String, trim: true }], // Added brand support
     usageLimit: { type: Number, min: 1 },
     usedCount: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
@@ -61,6 +63,7 @@ discountSchema.index({ status: 1, isActive: 1 });
 discountSchema.index({ startDate: 1, endDate: 1 });
 discountSchema.index({ applicableCategories: 1 });
 discountSchema.index({ applicableProducts: 1 });
+discountSchema.index({ applicableBrands: 1 }); // Added brand index
 
 const Discount: Model<IDiscount> = mongoose.model<IDiscount>(
   "Discount",
